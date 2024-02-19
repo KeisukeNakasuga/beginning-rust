@@ -122,8 +122,11 @@ where
     (base.ln().multiply(exponent)).exp()
 }
 
-trait Dictionary<Key> {
-    fn get(&self, key: Key) -> Option<String>;
+trait Dictionary {
+    type Key;
+    type Count;
+    fn get(&self, key: Self::Key) -> Option<String>;
+    fn count(&self, key: Self::Key) -> Self::Count;
 }
 
 struct Record {
@@ -135,9 +138,33 @@ struct RecordSet {
     data: Vec<Record>,
 }
 
-fn get_name<D>(dict: &D, id: u32) -> Option<String>
+impl Dictionary for RecordSet {
+    type Key = u32;
+    type Count = usize;
+
+    fn get(&self, key: Self::Key) -> Option<String> {
+        for record in self.data.iter() {
+            if record.id == key {
+                return Some(String::from(&record.name));
+            }
+        }
+        None
+    }
+
+    fn count(&self, key: Self::Key) -> Self::Count {
+        let mut c = 0;
+        for record in self.data.iter() {
+            if record.id == key {
+                c += 1;
+            }
+        }
+        c
+    }
+}
+
+fn get_name<D>(dict: &D, id: <D as Dictionary>::Key) -> Option<String>
 where
-    D: Dictionary<u32>,
+    D: Dictionary,
 {
     dict.get(id)
 }
@@ -154,4 +181,25 @@ fn main() {
 
     println!("19.10 ===================");
     println!("{} {}", exponentiate(2.5, 3.2), exponentiate(2.5f32, 3.2));
+
+    println!("19.11 ===================");
+    let names = RecordSet {
+        data: vec![
+            Record {
+                id: 34,
+                name: "John".to_string(),
+            },
+            Record {
+                id: 49,
+                name: "Jane".to_string(),
+            },
+        ],
+    };
+    println!(
+        "{}, {}; {:?}, {:?}",
+        names.count(48),
+        names.count(49),
+        get_name(&names, 48),
+        get_name(&names, 49)
+    );
 }
